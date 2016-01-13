@@ -1,0 +1,14 @@
+Libraries and softwares to be installed on pi just after first boot:
+
+1) Open CV: python and c++
+2) Wiring pi c++ and python
+3) raspberry pi camera module
+4) cmake
+5) pip
+6) python-smbus
+7) i2c-tools (for i2c)
+8) tightvncserver
+9) isc-dhcp-server
+10) cmake
+11) libi2c-dev
+12) Auto connect to wifi

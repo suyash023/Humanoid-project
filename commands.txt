@@ -1,0 +1,10 @@
+COMMANDS
+
+VNC SERVER
+1) tightvncserver -geometry 1920x1080
+2) vncserver -kill :(number)
+
+I2C test
+
+1) sudo i2cdetect -y 1
+2) sudo i2cget -y 0x68 0x75
