@@ -1,13 +1,18 @@
 #include <Servo.h> 
-#define tilt 15
+#define tilt 20
 #define side_tilt 5	//angle tilt of feet
 #define mtilt 95	//angle rectification of feet so that it doesnot sweep ground
 #define knee 10	
 #define mknee 105	//angle tilt of knee
 #define thigh 95	//angle thigh moves backward
-#define mthigh 15	//angle thigh moves forward
+#define mthigh 20	//angle thigh moves forward
 #define relax 90	//initial or relax angle of all servo
-#define sped 10	// the lesser the sped, bot will move that fast
+#define sped 12	// the lesser the sped, bot will move that fast
+#define distMin 15
+#define trigPin_1 13
+#define echoPin_1 2
+#define trigPin_2 7
+#define echoPin_2 8
 Servo lf,rf,lk,rk,lt,rt,lst,rst;
 void left_feet(int a);
 void left_knee(int a);
@@ -22,7 +27,7 @@ void right_thigh_left_knee(int a,int b);
 void left_thigh_right_knee(int a ,int b);
 void left_knee_left_thigh(int a,int b);
 void right_thigh_left_thigh(int a,int b);
-
+boolean walkContinue=true;
 int lfi=90,rfi=90,lki=90,rki=90,lti=90,rti=90,lsti=90,rsti=90;;//stores final position after movement
 void straight()		//sets up the bot in straight position(initial position)
 {
@@ -71,17 +76,57 @@ Serial.begin(9600);
  rt.attach(12);
 } 
 
+boolean check_left(){//returns if obstacle is present->true
+  float distance;
+  long duration;
+  pinMode(trigPin_1,OUTPUT);
+  digitalWrite(trigPin_1,LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin_1, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(trigPin_1, LOW);
+  pinMode(echoPin_1,INPUT);
+  duration=pulseIn(echoPin_1, HIGH);
+  distance=(duration/2) / 29.1;
+  if(distance<=distMin){
+    return true;
+  }
+  else
+    return false;
+}
+boolean check_right(){//returns if obstacle is present->true
+  float distance;
+  long duration;
+  pinMode(trigPin_2,OUTPUT);
+  digitalWrite(trigPin_2,LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin_2, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(trigPin_2, LOW);
+    pinMode(echoPin_2,INPUT);
+  duration=pulseIn(echoPin_2, HIGH);
+  distance=(duration/2) / 29.1;
+    Serial.println(distance);
+  if(distance<=distMin){
+    return true;
+  }
+  else
+    return false;
+}
+
+
 void bot_tilt_left(){
   right_feet(rfi-tilt);
+   
   left_side_thigh(lsti-side_tilt);
-  
+  right_feet(rfi+2*side_tilt);
   left_feet(lfi+tilt);
   
 }
 void bot_tilt_right(){
   left_feet(lfi-tilt);
   right_side_thigh(rsti-side_tilt);
-  
+  left_feet(lfi+2*side_tilt);
   right_feet(rfi+tilt);
   
 }
@@ -187,20 +232,32 @@ void walk_start()		//starts the walking process(code executed only once)
   delay(0);
   right_knee_right_thigh(rki-mthigh,rti+mthigh);
   delay(0);
+   
+  
 }
 void walk2(){
+  right_feet(rfi-2*side_tilt);
   motors_four(side_tilt,-1*side_tilt,-1*tilt,tilt);
-  delay(0);
+  delay(200);
   motors_thigh_knee(-1*mthigh,-1*mthigh, mthigh,mthigh);
   delay(0);
+  if(check_right()){
+    walkContinue=false;
+      return;
+  }
   bot_tilt_right();
   left_side_thigh(lsti+side_tilt);
   delay(0);
   left_knee_left_thigh(lki-mthigh*2,lti+mthigh*2);
   delay(0);
+  left_feet(lfi-2*side_tilt);
   motors_four(-1*side_tilt,side_tilt,tilt,-1*tilt);
-  delay(0);
+  delay(100);
   motors_thigh_knee(-1*mthigh,-1*mthigh,mthigh,mthigh);
+  if(check_left()){
+    walkContinue=false;
+      return;
+  }
   delay(0);
   bot_tilt_left();
   right_side_thigh(rsti+side_tilt);
@@ -211,11 +268,7 @@ void walk2(){
 
 void kick(){
   bot_tilt_left();
-    //delay(500);
     left_side_thigh(lsti+2*side_tilt);
-    //delay(500);
-  //right_knee_right_thigh(rki-mthigh*2,rti+mthigh);
-    //delay(500);
   right_knee(rki-mthigh*3);
   delay(1000);
   right_knee_speed(rki+mthigh*3);
@@ -226,16 +279,40 @@ void kick(){
   
 }
 
-void sidewalk(){
+void sidewalkLeft(){
   bot_tilt_right();
-  left_side_thigh(lsti+side_tilt*4);
+  left_side_thigh(lsti+side_tilt*3);
   left_feet(lfi-side_tilt*4+tilt);
+  
   right_feet(rfi-tilt);
   right_side_thigh(rsti+side_tilt);
+  left_feet(lfi-2*side_tilt);
   motors_four(side_tilt*(-4),side_tilt*4,side_tilt*4,side_tilt*(-4));
   bot_tilt_left();
-  right_feet(rfi+side_tilt*4+tilt);
-  right_side_thigh(rsti-side_tilt*4);
+  right_feet(rfi-2*side_tilt);
+  right_feet(rfi-side_tilt*4+tilt);
+  right_side_thigh(rsti-side_tilt*2);
+//  while(1);
+//  left_feet(lfi-tilt);
+//  left_side_thigh(lsti+side_tilt);
+straight();
+  
+}
+
+void sidewalkRight(){
+  bot_tilt_left();
+  right_side_thigh(rsti+side_tilt*3);
+  right_feet(rfi-side_tilt*4+tilt);
+  
+  left_feet(lfi-tilt);
+  left_side_thigh(lsti+side_tilt);
+  right_feet(rfi-2*side_tilt);
+  motors_four(side_tilt*(4),side_tilt*(-4),side_tilt*(-4),side_tilt*(4));
+  bot_tilt_right();
+  left_feet(lfi-2*side_tilt);
+  left_feet(lfi-side_tilt*4+tilt);
+  left_side_thigh(lsti-side_tilt*2);
+//  while(1);
 //  left_feet(lfi-tilt);
 //  left_side_thigh(lsti+side_tilt);
 straight();
@@ -243,20 +320,43 @@ straight();
 }
 
 
+void decision(){
+  walkContinue=true;
+  while(1){
+    boolean right=check_right();
+    boolean left=check_left();
+    if(right && left){
+      ;//stop
+    }  
+    else if(!right && left){
+      sidewalkRight(); //walk right
+    }
+    else  if(right && !left){
+        sidewalkLeft(); //walk left
+    }
+    else{
+      return;
+    }
+  }
+}
+
+
+
 void loop() 
 { 
   straight();
-  delay(3000);
-  for(int i=0; i<3; i++){
-    sidewalk();
+  delay(2000);
+  while(1){
+    decision();
+    straight();
+    walk_start();
+    while(walkContinue)
+      walk2();
+    straight();
   }
-  walk_start();
-  for(int i=0; i<3; i++)
-    walk2();
-  straight();
-  kick();
-  
-  while(1);
+//  straight();
+//  kick();
+    
 } 
 void sweep(Servo myServo,int* initial,int final){
   int i=*initial,toDecrease=1;
@@ -331,6 +431,7 @@ void right_knee_right_thigh(int a,int b)	//to move right knee and right thigh to
 }
 void right_knee_right_thigh_speed(int a,int b)	//to move right knee and right thigh together to required pos
 {
+  int sp=sped;
   int i=(rki>a?-1:1),j=(rti>b?-1:1);
   while(rki!=a && rti!=b){
     rki+=i;
